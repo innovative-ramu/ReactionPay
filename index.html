@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ReactionPay | PayPal Live Video Gifting</title>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Open-Source PeerJS WebRTC (No API Key Needed) -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+    <!-- Official PayPal Universal Sandbox SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD&intent=capture"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-shell">
+
+        <!-- TOP PAYPAL-STYLE FINTECH HEADER -->
+        <header class="pp-header">
+            <div class="pp-brand">
+                <div class="pp-logo">
+                    <i class="ri-paypal-fill"></i>
+                </div>
+                <div class="pp-title-box">
+                    <h1>Reaction<span>Pay</span></h1>
+                    <div class="pp-status">
+                        <span id="conn-dot" class="status-dot"></span>
+                        <span id="conn-text">Ready to Connect</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pp-header-right">
+                <div class="wallet-pill" id="btn-open-wallet" title="Sandbox Balance">
+                    <i class="ri-wallet-3-fill"></i>
+                    <span id="wallet-balance">$250.00</span>
+                </div>
+                <button class="header-icon-btn" id="btn-open-vault" title="Reaction Vault">
+                    <i class="ri-polaroid-2-line"></i>
+                    <span id="vault-count" class="count-badge">0</span>
+                </button>
+                <button class="header-icon-btn" id="btn-open-ai-key" title="Optional Gemini AI Key">
+                    <i class="ri-sparkling-2-line"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- LIVE AI EMOTION SENSOR PILL -->
+        <div id="ai-sensor-pill" class="ai-sensor-pill hidden">
+            <span id="sensor-emoji" class="sensor-emoji">😊</span>
+            <div class="sensor-meta">
+                <strong id="sensor-title">AI Reaction Radar Active</strong>
+                <span id="sensor-sub">Waiting for gift transfer...</span>
+            </div>
+        </div>
+
+        <!-- LIVE GIFT TRANSFER ALERT BANNER (Pops up on both phones) -->
+        <div id="live-transfer-banner" class="transfer-banner hidden">
+            <div class="transfer-check"><i class="ri-checkbox-circle-fill"></i></div>
+            <div class="transfer-info">
+                <h4 id="banner-amt">$20.00 Sent via PayPal</h4>
+                <p id="banner-note">"For my favorite person 💖"</p>
+            </div>
+        </div>
+
+        <!-- FLOATING EMOJI STREAM -->
+        <div id="emoji-stream"></div>
+
+        <!-- MAIN VIDEO CALL VIEWPORT -->
+        <main class="video-viewport">
+            <div id="remote-video-wrap" class="remote-video-wrap">
+                
+                <!-- FINTECH LOBBY CARD (Hides when video starts) -->
+                <div id="lobby-screen" class="lobby-card">
+                    <div class="lobby-badge">
+                        <i class="ri-shield-check-fill"></i> P2P Encrypted Video + PayPal Sandbox
+                    </div>
+                    <h2>Face-to-Face Gifting</h2>
+                    <p>Enter the same room name on two devices to connect instantly, or test solo with your camera.</p>
+
+                    <div class="room-box">
+                        <span class="room-prefix">Room ID</span>
+                        <input type="text" id="room-input" value="gift-2026" placeholder="e.g. love-room">
+                        <button id="btn-copy-room" class="copy-btn" title="Copy Invite Link">
+                            <i class="ri-share-forward-line"></i>
+                        </button>
+                    </div>
+
+                    <button id="btn-join-room" class="pp-btn-primary">
+                        <i class="ri-video-chat-fill"></i> Connect Live Video Call
+                    </button>
+
+                    <button id="btn-solo-mode" class="pp-btn-secondary">
+                        <i class="ri-camera-switch-line"></i> Launch Solo Camera Demo
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Floating Local PIP Video (Tap to switch corners) -->
+            <div id="local-pip" class="local-pip hidden" title="Tap to move">
+                <span class="pip-badge">You</span>
+            </div>
+        </main>
+
+        <!-- FLOATING QUICK REACTION SIDEBAR -->
+        <aside class="quick-sidebar">
+            <button class="react-btn" data-emoji="❤️">❤️</button>
+            <button class="react-btn" data-emoji="🥰">🥰</button>
+            <button class="react-btn" data-emoji="🎉">🎉</button>
+            <button class="react-btn ai-snap-trigger" id="btn-manual-snap" title="Instant AI Snapshot">📸</button>
+        </aside>
+
+        <!-- BOTTOM PAYPAL ACTION DOCK -->
+        <footer class="pp-bottom-dock">
+            <button id="btn-mute-mic" class="dock-circle-btn" title="Mute Mic">
+                <i class="ri-mic-fill"></i>
+            </button>
+            <button id="btn-mute-cam" class="dock-circle-btn" title="Toggle Camera">
+                <i class="ri-vidicon-fill"></i>
+            </button>
+
+            <!-- HERO PAYPAL SEND MONEY BUTTON -->
+            <button id="btn-open-send" class="pp-send-hero">
+                <i class="ri-paypal-fill"></i>
+                <span>Send Gift</span>
+            </button>
+
+            <button id="btn-mirror" class="dock-circle-btn" title="Mirror Camera">
+                <i class="ri-flip-horizontal-line"></i>
+            </button>
+            <button id="btn-hangup" class="dock-circle-btn danger" title="Leave Call">
+                <i class="ri-phone-fill"></i>
+            </button>
+        </footer>
+
+        <!-- =======================================================
+             DRAWER 1: PAYPAL SEND MONEY & GIFT SHEET (Over Video)
+             ======================================================= -->
+        <section id="sheet-send" class="sheet-backdrop hidden">
+            <div class="pp-sheet">
+                <div class="sheet-drag-bar"></div>
+                <div class="sheet-head">
+                    <div class="pp-sheet-title">
+                        <i class="ri-paypal-fill"></i>
+                        <div>
+                            <h3>Send Reaction Gift</h3>
+                            <p>Instant transfer + automatic AI smile capture</p>
+                        </div>
+                    </div>
+                    <button class="sheet-close" data-close="sheet-send"><i class="ri-close-line"></i></button>
+                </div>
+
+                <!-- Big PayPal Currency Display -->
+                <div class="pp-amount-display">
+                    <span class="currency-sign">$</span>
+                    <input type="number" id="custom-amount-input" value="20.00" min="1" max="1000" step="1">
+                    <span class="currency-code">USD</span>
+                </div>
+
+                <!-- Preset Gift Chips -->
+                <div class="gift-chips">
+                    <button class="gift-chip" data-amt="5.00" data-label="Coffee Treat ☕">
+                        <span>☕ $5</span>
+                        <small>Coffee</small>
+                    </button>
+                    <button class="gift-chip active" data-amt="20.00" data-label="Sweet Bouquet 💐">
+                        <span>💐 $20</span>
+                        <small>Bouquet</small>
+                    </button>
+                    <button class="gift-chip" data-amt="50.00" data-label="Dinner Date 🍽️">
+                        <span>🍽️ $50</span>
+                        <small>Dinner</small>
+                    </button>
+                    <button class="gift-chip" data-amt="100.00" data-label="Special Surprise 💎">
+                        <span>💎 $100</span>
+                        <small>Luxury</small>
+                    </button>
+                </div>
+
+                <!-- Personal Gift Note -->
+                <div class="pp-note-box">
+                    <i class="ri-quill-pen-line"></i>
+                    <input type="text" id="gift-note-input" value="Wanted to see your smile today! 💖" placeholder="Add a message...">
+                </div>
+
+                <!-- 1-Tap PayPal Gold Instant Transfer (Guaranteed fast demo flow) -->
+                <button id="btn-pp-instant" class="pp-gold-btn">
+                    <i class="ri-paypal-fill"></i> Pay Now & Capture Reaction
+                </button>
+
+                <!-- Official PayPal JS SDK Smart Buttons -->
+                <div class="sdk-divider"><span>or checkout with PayPal Popup</span></div>
+                <div id="paypal-button-container" class="paypal-sdk-box"></div>
+            </div>
+        </section>
+
+        <!-- =======================================================
+             DRAWER 2: AI POLAROID REACTION CARD
+             ======================================================= -->
+        <section id="sheet-polaroid" class="sheet-backdrop center-popup hidden">
+            <div class="polaroid-modal">
+                <div class="polaroid-card">
+                    <div class="polaroid-photo-box">
+                        <img id="polaroid-img" src="" alt="Reaction Snapshot">
+                        <div class="pp-verified-pill">
+                            <i class="ri-paypal-fill"></i> <span id="polaroid-amt-tag">$20.00 Sent</span>
+                        </div>
+                    </div>
+                    <div class="polaroid-text-area">
+                        <p id="polaroid-caption">"Analyzing her reaction..."</p>
+                        <div class="polaroid-footer-meta">
+                            <span id="polaroid-score">🥰 Happiness: 99%</span>
+                            <span id="polaroid-timestamp">Just now</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="polaroid-action-row">
+                    <button id="btn-save-photo" class="pp-btn-primary">
+                        <i class="ri-download-2-line"></i> Download Polaroid
+                    </button>
+                    <button class="pp-btn-secondary" data-close="sheet-polaroid">
+                        Continue Call
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- =======================================================
+             DRAWER 3: REACTION MEMORY VAULT & RECEIPTS
+             ======================================================= -->
+        <section id="sheet-vault" class="sheet-backdrop hidden">
+            <div class="pp-sheet">
+                <div class="sheet-drag-bar"></div>
+                <div class="sheet-head">
+                    <div class="pp-sheet-title">
+                        <i class="ri-polaroid-2-fill"></i>
+                        <div>
+                            <h3>Reaction Memory Vault</h3>
+                            <p>Saved Polaroids & PayPal Gift History</p>
+                        </div>
+                    </div>
+                    <button class="sheet-close" data-close="sheet-vault"><i class="ri-close-line"></i></button>
+                </div>
+                <div id="vault-grid" class="vault-grid">
+                    <p class="empty-msg">No memories captured yet. Send a gift during your call to unlock your first Polaroid!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- =======================================================
+             DRAWER 4: OPTIONAL GEMINI AI KEY SETUP
+             ======================================================= -->
+        <section id="sheet-ai-key" class="sheet-backdrop hidden">
+            <div class="pp-sheet">
+                <div class="sheet-drag-bar"></div>
+                <div class="sheet-head">
+                    <div class="pp-sheet-title">
+                        <i class="ri-sparkling-2-fill"></i>
+                        <div>
+                            <h3>AI Vision Engine</h3>
+                            <p>Built-in Smart AI is active by default. Optionally add a Gemini API key for deep vision.</p>
+                        </div>
+                    </div>
+                    <button class="sheet-close" data-close="sheet-ai-key"><i class="ri-close-line"></i></button>
+                </div>
+
+                <div class="key-form">
+                    <label>Google Gemini API Key (Optional)</label>
+                    <input type="password" id="gemini-key-input" placeholder="AIzaSy... (Leave blank for built-in Smart AI)">
+                    <button id="btn-save-ai-key" class="pp-btn-primary">
+                        <i class="ri-check-line"></i> Save AI Configuration
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Hidden Canvas for Frame Capture -->
+    <canvas id="capture-canvas" style="display:none;"></canvas>
+
+    <script src="app.js"></script>
+</body>
+</html>
